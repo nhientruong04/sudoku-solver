@@ -220,3 +220,35 @@ void print_candidate_num(SudokuBoard *p_board)
         printf("\n");
     }
 }
+
+void print_board(SudokuBoard *p_board)
+{
+    for (int i=0; i<BOARD_SIZE; i++)
+    {
+        for (int j=0; j<BOARD_SIZE; j++)
+        {
+            if (j==0)
+            {
+                printf("|");
+            }
+
+            Cell cell = p_board->data[i][j];
+            int value;
+
+            if (cell.value>=1 && cell.value<=9)
+            {
+                value = cell.value;
+            } else
+            {
+                value = 0;
+            }
+
+            printf(" %d |", value);
+
+            if (j==BOARD_SIZE-1)
+            {
+                printf("\n");
+            }
+        }
+    }
+}
