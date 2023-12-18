@@ -17,26 +17,32 @@ int main(int argc, char **argv)
     SudokuBoard *board = malloc(sizeof(SudokuBoard));
     init_sudoku(board);
     load_sudoku(board, argv[1]);
+    print_board(board);
 
-    Cell **p_solved_cells = board->solved_cells;
-    int solved_counter = board->solved_counter;
-    while (board->solved_counter < BOARD_SIZE * BOARD_SIZE)
-    {
-        solved_counter = check_solved_cells(board, &p_solved_cells);
-        // printf("check_solved_cells %d\n", solved_counter);
-        if (show_possible(board, p_solved_cells, solved_counter))
-        {
-            // printf("show_possible -> Yes\n");
-            continue;
-        }
-        // solved_counter = hidden_singles(board);
-        // if (solved_counter)
-        // {
-        //     printf("hidden_singles %d\n", solved_counter);
-        //     continue;
-        // }
-    }
-    print_solution(board);
+    // Cell **p_solved_cells = board->solved_cells;
+    // int solved_counter = board->solved_counter;
+    // while (board->solved_counter < BOARD_SIZE * BOARD_SIZE)
+    // {
+    //     solved_counter = check_solved_cells(board, &p_solved_cells);
+    //     // printf("check_solved_cells %d\n", solved_counter);
+    //     if (show_possible(board, p_solved_cells, solved_counter))
+    //     {
+    //         // printf("show_possible -> Yes\n");
+    //         continue;
+    //     }
+    //     // solved_counter = hidden_singles(board);
+    //     // if (solved_counter)
+    //     // {
+    //     //     printf("hidden_singles %d\n", solved_counter);
+    //     //     continue;
+    //     // }
+    //     print_board(board);
+    //     loop_count++;
+    // }
+    // printf("%d\n", loop_count);
+
+    int count = hidden_singles(board);
+    printf("%d", count);
 
     // clean up
     free_sudoku(board);

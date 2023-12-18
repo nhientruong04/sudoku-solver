@@ -1,22 +1,14 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include "src/sudoku.h"
 
-#define BOARD_SIZE 9
+int main(int agrc, char **argv) {
+    SudokuBoard *p_board = malloc(sizeof(SudokuBoard));
 
-struct Cell_impl
-{
-    int row_index;
-    int col_index;
-    int box_index;
-    int num_candidates;
-    int candidates[BOARD_SIZE];
-    int value; // solved or 0
-    bool fixed;
-};
+    init_sudoku(p_board);
+    load_sudoku(p_board, argv[1]);
+    print_board(p_board);
 
-typedef struct Cell_impl Cell;
-
-int main() {
-    
     return 0;
 }

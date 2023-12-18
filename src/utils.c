@@ -103,6 +103,8 @@ void set_candidates(Cell *cell, int *candidates, int size)
     if (size == 1)
     {
         cell->value = candidates[0];
+    } else {
+        cell->value = 0;
     }
 }
 
@@ -223,6 +225,7 @@ void print_candidate_num(SudokuBoard *p_board)
 
 void print_board(SudokuBoard *p_board)
 {
+    printf("\n");
     for (int i=0; i<BOARD_SIZE; i++)
     {
         for (int j=0; j<BOARD_SIZE; j++)
@@ -251,4 +254,5 @@ void print_board(SudokuBoard *p_board)
             }
         }
     }
+    printf("\n");
 }

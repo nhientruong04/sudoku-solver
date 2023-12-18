@@ -17,6 +17,7 @@ FILES = $(wildcard src/*.c) $(wildcard src/*.h)
 OBJS = src/hidden_singles.o src/utils.o #src/hidden_pairs.o src/hidden_triples.o src/naked_pairs.o src/naked_triples.o src/naked_triples.o
 BINS = sudoku autograder
 
+TEST_FILES = demo.o src/utils.o
 TEST_COUNT = 10
 TESTS = $(shell seq 1 1 $(TEST_COUNT))
 
@@ -53,6 +54,12 @@ endif
 
 
 all: $(BINS)
+
+test: $(TEST_FILES)
+	$(CC) $(FLAGS) $^ -o $@ -lm
+
+demo.o: demo.c src/sudoku.h
+	$(CC) -c demo.c 
 
 # wildcard rule for compiling object file from source and header
 src/%.o: src/%.c src/%.h
