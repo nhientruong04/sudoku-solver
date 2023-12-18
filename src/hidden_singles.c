@@ -11,7 +11,7 @@ int hidden_singles(SudokuBoard *p_board)
     
     int count = 0;
 
-    // Check every cell
+    // Check every cell to find hidden values
     for(int i=0; i<BOARD_SIZE; i++)
     {
         for (int j=0; j<BOARD_SIZE; j++)
@@ -24,18 +24,30 @@ int hidden_singles(SudokuBoard *p_board)
 
                 if (hidden_num != 0)
                 {
-                    HiddenSingle found_cell;
-                    found_cell.p_cell = &p_board->data[i][j];
-                    found_cell.value = hidden_num;
+                    HiddenSingle *found_cell = malloc(sizeof(HiddenSingle));
+                    found_cell->p_cell = &p_board->data[i][j];
+                    found_cell->value = hidden_num;
 
-                    hiddens_found_list[count] = &found_cell;
+                    hiddens_found_list[count] = found_cell;
 
-                    printf("Found a hidden single with value %d\n at cell [%d][%d]\n", found_cell.value, i, j);
+                    printf("Found a hidden single with value %d\n at cell [%d][%d]\n", found_cell->value, i, j);
 
                     count++;
                 }
             }
         }
+    }
+
+    int set_cell_count = 0;
+    while (set_cell_count < count)
+    {
+        HiddenSingle *hs_cell = hiddens_found_list[set_cell_count];
+        int candidates[] = {hs_cell->value};
+        set_candidates(hs_cell->p_cell, candidates, 1);
+
+        // p_board->solved_cells[++p_board->solved_counter] = found_cell->p_cell;
+        free(hiddens_found_list[set_cell_count]);
+        set_cell_count++;
     }
    
     free(hiddens_found_list);
@@ -100,6 +112,12 @@ int find_hidden_single_values(SudokuBoard *p_board, Cell *cell, HiddenSingle **h
         if (cell->candidates[num])
         {
             bool check_value = false;
+
+            if (cell->num_candidates == 1) 
+            {
+                check_value = true;
+            }
+
             int box_index = cell->box_index;
             int row_index = cell->row_index;
             int col_index = cell->col_index;
@@ -117,4 +135,18 @@ int find_hidden_single_values(SudokuBoard *p_board, Cell *cell, HiddenSingle **h
     }
 
     return hidden_value;
+}
+
+void set_hs_candidate(Cell *p_cell, int value)
+{
+    for (int i=0; i<BOARD_SIZE; i++)
+    {
+        if (p_cell->candidates[value-1] && i != value-1)
+        {
+            p_cell->candidates[value-1] = 0;
+        }
+
+        p_cell->value = value;
+        p_cell-> num_candidates = 1;
+    }
 }
