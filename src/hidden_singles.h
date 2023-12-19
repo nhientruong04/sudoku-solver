@@ -18,11 +18,5 @@ void find_hidden_single(Cell *p_cell, Cell **find_target);
 // find hidden single cells in a board, return the number of hidden single cells
 int hidden_singles(SudokuBoard *p_board);
 
-// show all possible candidates
-void show_possible_hs(SudokuBoard *p_board);
-
 // check uniqueness in group
 bool check_constraint(Cell *p_cell, Cell **find_target, int value);
-
-// set found hiddens as cell value, including unset all unecessary candidates
-void set_hs_candidate(Cell *p_cell, int value);

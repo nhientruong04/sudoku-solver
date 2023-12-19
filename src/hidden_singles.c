@@ -6,8 +6,6 @@
 int hidden_singles(SudokuBoard *p_board)
 {
     HiddenSingle **hiddens_found_list = malloc(BOARD_SIZE * BOARD_SIZE * sizeof(HiddenSingle *));
-
-    show_possible_hs(p_board);
     
     int count = 0;
 
@@ -19,7 +17,6 @@ int hidden_singles(SudokuBoard *p_board)
             // If cell has not been solved
             if (p_board->data[i][j].value == 0)
             {
-                printf("Checking cell [%d][%d]\n", i, j);
                 int hidden_num = find_hidden_single_values(p_board, &p_board->data[i][j], hiddens_found_list);
 
                 if (hidden_num != 0)
@@ -29,8 +26,6 @@ int hidden_singles(SudokuBoard *p_board)
                     found_cell->value = hidden_num;
 
                     hiddens_found_list[count] = found_cell;
-
-                    printf("Found a hidden single with value %d\n at cell [%d][%d]\n", found_cell->value, i, j);
 
                     count++;
                 }
@@ -45,7 +40,6 @@ int hidden_singles(SudokuBoard *p_board)
         int candidates[] = {hs_cell->value};
         set_candidates(hs_cell->p_cell, candidates, 1);
 
-        // p_board->solved_cells[++p_board->solved_counter] = found_cell->p_cell;
         free(hiddens_found_list[set_cell_count]);
         set_cell_count++;
     }
@@ -63,25 +57,6 @@ void find_hidden_single(Cell *p_cell, Cell **find_target)
         if(value && p_cell->candidates[value-1])
         {
             unset_candidate(p_cell, value);
-        }
-    }
-}
-
-void show_possible_hs(SudokuBoard *p_board)
-{
-    for(int i=0; i<BOARD_SIZE; i++)
-    {
-        for(int j=0; j<BOARD_SIZE; j++)
-        {
-            Cell *cell = &p_board->data[i][j];
-            if(cell->value)
-            {
-                continue;
-            }
-
-            find_hidden_single(cell, p_board->p_rows[i]);
-            find_hidden_single(cell, p_board->p_cols[j]);
-            find_hidden_single(cell, p_board->p_boxes[(i / 3) * 3 + j / 3]);
         }
     }
 }
@@ -135,18 +110,4 @@ int find_hidden_single_values(SudokuBoard *p_board, Cell *cell, HiddenSingle **h
     }
 
     return hidden_value;
-}
-
-void set_hs_candidate(Cell *p_cell, int value)
-{
-    for (int i=0; i<BOARD_SIZE; i++)
-    {
-        if (p_cell->candidates[value-1] && i != value-1)
-        {
-            p_cell->candidates[value-1] = 0;
-        }
-
-        p_cell->value = value;
-        p_cell-> num_candidates = 1;
-    }
 }

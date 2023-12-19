@@ -26,6 +26,11 @@ int main(int argc, char **argv)
     {
         solved_counter = check_solved_cells(board, &p_solved_cells);
         printf("check_solved_cells %d\n", solved_counter);
+
+        if (show_possible(board, p_solved_cells, solved_counter))
+        {
+            continue;
+        }
         
         int count = hidden_singles(board);
         printf("Found %d hidden singles\n.", count);
