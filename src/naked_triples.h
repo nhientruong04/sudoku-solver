@@ -33,11 +33,19 @@ int find_nakedTriples_members(SudokuBoard *p_board, PossibleMembers **possible_m
 // check if cell has naked triples
 // bool has_naked_triple(Cell *cell);
 
-// find convention triples member 2
+// find conventional triples
 bool find_convention_triples(NakedTriples *triple, PossibleMembers **possible_member_cells, NakedTriples **naked_triples_list, int size);
-
-// find convention triples member 3
 bool find_convention_triples_step2(NakedTriples *triple, PossibleMembers *member2, PossibleMembers **possible_member_cells, NakedTriples **naked_triples_list, int size);
 
+// find special triples
+bool find_special_triples(NakedTriples *triple, PossibleMembers **possible_member_cells, NakedTriples **naked_triples_list, int size);
+bool find_special_triples_step2(NakedTriples *triple, PossibleMembers *member2, PossibleMembers **possible_member_cells, NakedTriples **naked_triples_list, int size, int odd_candidate);
+
+// find and unset duplicate candidates at other cells
+void apply_naked_triples_effect(SudokuBoard *p_board, NakedTriples *triple);
+
+// check if the original cell and the potential cell is in the same house
 bool is_same_house(int *match_positions, PossibleMembers *second_cell, int row_index, int col_index, int box_index);
+
+void unset_candidates_naked_triples(NakedTriples *triple, Cell **group);
 void get_value(Cell *cell, int *value_triples, int num_candidates);
