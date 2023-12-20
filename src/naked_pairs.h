@@ -11,8 +11,6 @@ struct NakedPairs_Impl
     int value_pair[2];
 };
 
-
-
 typedef struct NakedPairs_Impl NakedPairs;
 
 int naked_pairs(SudokuBoard *p_board);
