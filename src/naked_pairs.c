@@ -5,14 +5,26 @@ int naked_pairs(SudokuBoard *p_board)
 {
     // init NakedPairs array
     int array_size = (BOARD_SIZE*BOARD_SIZE - p_board->solved_counter) /2;
+    // save all pairs
     NakedPairs **naked_pairs_list = malloc(array_size * sizeof(NakedPairs *));
+    // save all cells that are already paired
+    Cell **registered_cells = malloc(array_size * 2 * sizeof(Cell*));
 
-    int pairs_count = find_nakedpairs(p_board, naked_pairs_list);
+    // detect nakedpairs and register the pairs to naked_pairs_list
+    int pairs_count = find_nakedpairs(p_board, naked_pairs_list, registered_cells);
 
-    // for (int i=0; i<array_size; i++)
-    // {
-    //     free(naked_pairs_list[i]);
-    // }
+    // apply naked pairs effect
+    for (int i=0; i<pairs_count; i++)
+    {
+        apply_naked_pairs_effect(p_board, naked_pairs_list[i]);
+    }
+
+    // free all ptrs
+    for (int i=0; i<pairs_count; i++)
+    {
+        free(naked_pairs_list[i]);
+    }
+    free(registered_cells);
     free(naked_pairs_list);
 
     return pairs_count;
@@ -23,7 +35,7 @@ int naked_pairs(SudokuBoard *p_board)
 
 // }
 
-int find_nakedpairs(SudokuBoard *p_board, NakedPairs **naked_pairs_list)
+int find_nakedpairs(SudokuBoard *p_board, NakedPairs **naked_pairs_list, Cell **registered_cells)
 {
     int pairs_count = 0;
 
@@ -45,13 +57,20 @@ int find_nakedpairs(SudokuBoard *p_board, NakedPairs **naked_pairs_list)
                     continue;
                 }
 
-                NakedPairs *pair = malloc(sizeof(NakedPairs));
-                pair->cells_pair[0] = first_cell;
-                pair->cells_pair[1] = second_cell;
-                pair->value_pair[0] = value_pair[0];
-                pair->value_pair[1] = value_pair[1];
+                if (!is_registered(second_cell, registered_cells, pairs_count*2))
+                {
+                    NakedPairs *pair = malloc(sizeof(NakedPairs));
+                    pair->cells_pair[0] = first_cell;
+                    pair->cells_pair[1] = second_cell;
+                    pair->value_pair[0] = value_pair[0];
+                    pair->value_pair[1] = value_pair[1];
 
-                naked_pairs_list[pairs_count++] = pair;
+                    // register cells ptrs
+                    registered_cells[pairs_count * 2] = first_cell;
+                    registered_cells[pairs_count * 2 + 1] = second_cell;
+
+                    naked_pairs_list[pairs_count++] = pair;
+                }
             }
         }
     }
@@ -103,6 +122,12 @@ Cell *find_counterpart_in_group(Cell **group, Cell *cell, int *value_pair)
     for (int i=0; i<BOARD_SIZE; i++)
     {
         Cell *p_cell = group[i];
+
+        // check if has constraint of naked pairs
+        if (!has_naked_pairs(p_cell))
+        {
+            continue;
+        }
         
         if (p_cell->candidates[value_pair[0]] && p_cell->candidates[value_pair[1]] && p_cell != cell)
         {
@@ -129,6 +154,101 @@ void get_value_pair(Cell *cell, int *value_pair)
         if (counter == 2)
         {
             break;
+        }
+    }
+}
+
+bool is_registered(Cell *cell, Cell **registered_cells, int size) 
+{
+    bool ret = false;
+
+    for (int i=0; i<size; i++)
+    {
+        if (cell == registered_cells[i])
+        {
+            ret = true;
+            break;
+        }
+    }
+
+    return ret;
+}
+
+void apply_naked_pairs_effect(SudokuBoard *p_board, NakedPairs *pair)
+{
+    // [row, col, box]
+    int match_positions[3] = {0, 0, 0};
+    get_match_type(pair->cells_pair[0], pair->cells_pair[1],match_positions);
+
+    for (int i=0; i<3; i++)
+    {
+        if (match_positions[i] == 0)
+        {
+            continue;
+        }
+
+        if (i == 0)
+        {
+            unset_candidates_naked_pairs(pair, p_board->p_rows[pair->cells_pair[0]->row_index]);
+        }
+
+        if (i == 1)
+        {
+            unset_candidates_naked_pairs(pair, p_board->p_cols[pair->cells_pair[0]->col_index]);
+        }
+
+        if (i == 2)
+        {
+            unset_candidates_naked_pairs(pair, p_board->p_boxes[pair->cells_pair[0]->box_index]);
+        }
+    }
+}
+
+void get_match_type(Cell *first_cell, Cell *second_cell, int *match_positions)
+{
+    if (first_cell->row_index == second_cell->row_index)
+    {
+        match_positions[0] = 1;
+    }
+
+    if (first_cell->col_index == second_cell->col_index)
+    {
+        match_positions[1] = 1;
+    }
+
+    if (first_cell->box_index == second_cell->box_index)
+    {
+        match_positions[2] = 1;
+    }
+}
+
+void unset_candidates_naked_pairs(NakedPairs *pair, Cell **group)
+{
+    int candidate1 = pair->value_pair[0];
+    int candidate2 = pair->value_pair[1];
+
+    for (int i=0; i<BOARD_SIZE; i++)
+    {
+        Cell *cell = group[i];
+
+        if (cell->value > 0)
+        {
+            continue;
+        }
+
+        if (cell==pair->cells_pair[0] || cell==pair->cells_pair[1])
+        {
+            continue;
+        }
+
+        if (cell->candidates[candidate1])
+        {
+            unset_candidate(cell, candidate1 + 1);
+        }
+
+        if (cell->candidates[candidate2])
+        {
+            unset_candidate(cell, candidate2 + 1);
         }
     }
 }
