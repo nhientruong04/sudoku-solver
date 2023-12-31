@@ -14,11 +14,10 @@ FLAGS = -ggdb3 -Wall -Wextra -Wshadow -std=gnu11 -Wno-unused-parameter -Wno-unus
 # endif
 
 FILES = $(wildcard src/*.c) $(wildcard src/*.h)
-OBJS = src/hidden_singles.o src/utils.o #src/hidden_pairs.o src/hidden_triples.o src/naked_pairs.o src/naked_triples.o src/naked_triples.o
+OBJS = src/hidden_singles.o src/hidden_pairs.o src/hidden_triples.o src/naked_pairs.o src/naked_triples.o src/naked_triples.o src/utils.o
 BINS = sudoku autograder
 
-TEST_FILES = demo.o src/utils.o
-TEST_COUNT = 10
+TEST_COUNT = 20
 TESTS = $(shell seq 1 1 $(TEST_COUNT))
 
 # How verbose should test output be? 0 gives default output, 1 gives
@@ -54,12 +53,6 @@ endif
 
 
 all: $(BINS)
-
-test: $(TEST_FILES)
-	$(CC) $(FLAGS) $^ -o $@ -lm
-
-demo.o: demo.c src/sudoku.h
-	$(CC) -c demo.c 
 
 # wildcard rule for compiling object file from source and header
 src/%.o: src/%.c src/%.h
