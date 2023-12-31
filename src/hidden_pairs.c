@@ -1,259 +1,140 @@
 #include "hidden_pairs.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 int hidden_pairs(SudokuBoard *p_board)
 {
-    int pairs_found = 0;
-    int array_size = BOARD_SIZE * BOARD_SIZE - p_board->solved_counter;
+    int counter = 0;
+    HiddenPairs hidden_pairs[BOARD_SIZE * BOARD_SIZE];
 
-    Cell **registered_cells = malloc(array_size * sizeof(Cell *));
-    HiddenPairs **hidden_pairs_found = malloc(array_size * sizeof(HiddenPairs *));
-    for (int i=0; i<BOARD_SIZE; i++)
+    for (int i = 0; i < BOARD_SIZE; i++)
     {
-        for (int j=0; j<BOARD_SIZE; j++)
-        {
-            Cell *p_cell = &p_board->data[i][j];
-            if ((p_cell->num_candidates)<=2)
-            {
-                continue;
-            }
-
-            find_hidden_pairs(p_cell, p_board, registered_cells, hidden_pairs_found, &pairs_found);
-        }
+        find_hidden_pairs(p_board->p_rows[i], hidden_pairs, &counter);
+        find_hidden_pairs(p_board->p_cols[i], hidden_pairs, &counter);
+        find_hidden_pairs(p_board->p_boxes[i], hidden_pairs, &counter);
     }
 
-    for (int i=0; i<pairs_found; i++)
+    for (int i = 0; i < counter; i++)
     {
-        HiddenPairs *pair = hidden_pairs_found[i];
-        for (int j=0; j<BOARD_SIZE; j++)
-        {
-            if (j == pair->value_pair[0] || j == pair->value_pair[1])
-            {
-                pair->members_cell[0]->candidates[j] = 1;
-                pair->members_cell[1]->candidates[j] = 1;
-                continue;
-            }
-
-            pair->members_cell[0]->candidates[j] = 0;
-            pair->members_cell[1]->candidates[j] = 0;
-        }
+        // printf("Hidden single: %d %d %d\n", hidden_singles[i].p_cell->row_index, hidden_singles[i].p_cell->col_index, hidden_singles[i].value);
+        set_candidates(hidden_pairs[i].p_cell1, hidden_pairs[i].arr, 2);
+        set_candidates(hidden_pairs[i].p_cell2, hidden_pairs[i].arr, 2);
     }
 
-    // clean up
-    for (int i=0; i<pairs_found; i++)
+    for (int i = 0; i < counter; i++)
     {
-        free(hidden_pairs_found[i]);
+        free(hidden_pairs[i].arr);
     }
-    free(hidden_pairs_found);
-    free(registered_cells);
-
-    return pairs_found;
+    return counter;
 }
 
-void find_hidden_pairs(Cell *p_cell, SudokuBoard *p_board, Cell **registered_cells, HiddenPairs **hidden_pairs_found, int *pairs_found)
+void find_hidden_pairs(Cell **p_cells, HiddenPairs *p_hidden_pairs,
+                       int *p_counter)
 {
-    for (int i=0; i<BOARD_SIZE; i++)
+    int hidden_pair_values[BOARD_SIZE] = {0};
+    int hidden_pair_value_counter = find_hidden_pair_values(p_cells, hidden_pair_values);
+
+    for (int m = 0; m < hidden_pair_value_counter - 1; m++)
     {
-        for (int j=0; j<BOARD_SIZE; j++)
+        for (int n = m + 1; n < hidden_pair_value_counter; n++)
         {
-            Cell *p_counterpart = &p_board->data[i][j];
-            if (p_counterpart == p_cell || p_counterpart->num_candidates<=2)
+            int *pair = malloc(sizeof(int) * 2);
+            pair[0] = hidden_pair_values[m];
+            pair[1] = hidden_pair_values[n];
+            bool flagged = false;
+            int counter = 0; // number of cells with hidden pair values
+            for (int i = 0; i < BOARD_SIZE; i++)
             {
-                continue;
-            }
-
-            if (registered_pair(p_cell, p_counterpart, hidden_pairs_found, *pairs_found))
-            {
-                continue;
-            }
-
-            int *matched_positions = malloc(3 * sizeof(int));
-            matched_positions[0] = 1;
-            matched_positions[1] = 1;
-            matched_positions[2] = 1;
-
-            int matched_values[9];
-            bool same_house = is_same_house_hidden_pairs(matched_positions, p_cell, p_counterpart, p_cell->row_index, p_cell->col_index, p_cell->box_index);
-            bool same_candidates = check_validity(p_cell, p_counterpart, matched_values);
-
-            if (same_candidates && same_house)
-            {
-                bool not_unique = pair_is_not_unique(matched_values, matched_positions, p_cell, p_counterpart, p_board);
-                if (not_unique)
+                if (p_cells[i]->fixed || p_cells[i]->num_candidates <= 2)
                 {
-                    free(matched_positions);
                     continue;
                 }
 
-                HiddenPairs *pair = malloc(sizeof(HiddenPairs));
-                pair->members_cell[0] = p_cell;
-                pair->members_cell[1] = p_counterpart;
-                get_value_from_matched_ones(matched_values, pair->value_pair);
+                int *candidates = get_candidates(p_cells[i]);
 
-                pair->matched_positions = malloc(3 * sizeof(int));
-                pair->matched_positions[0] = matched_positions[0];
-                pair->matched_positions[1] = matched_positions[1];
-                pair->matched_positions[2] = matched_positions[2];
+                int count_same = 0;
+                for (int j = 0; j < p_cells[i]->num_candidates; j++)
+                {
+                    if (candidates[j] == pair[0] || candidates[j] == pair[1])
+                    {
+                        count_same++;
+                    }
+                }
 
-                hidden_pairs_found[(*pairs_found)++] = pair;
+                if (count_same == 2)
+                {
+                    if (!flagged)
+                    {
+                        p_hidden_pairs[*p_counter].p_cell1 = p_cells[i];
+                        flagged = true;
+                    }
+                    else
+                    {
+                        p_hidden_pairs[*p_counter].p_cell2 = p_cells[i];
+                    }
+                    counter++;
+                }
+
+                free(candidates);
             }
 
-            free(matched_positions);
-        }
-    }
-}
-
-bool registered_pair(Cell *mem1, Cell *mem2, HiddenPairs **hidden_pairs_found, int pairs_found)
-{
-    bool ret = false;
-
-    for (int i=0; i<pairs_found; i++)
-    {
-        Cell *ptr_1 = hidden_pairs_found[i]->members_cell[0];
-        Cell *ptr_2 = hidden_pairs_found[i]->members_cell[1];
-
-        ret |= (ptr_1 == mem1) && (ptr_2 == mem2);
-        ret |= (ptr_2 == mem1) && (ptr_1 == mem2);
-
-        if (ret)
-        {
-            return ret;
-        }
-    }
-
-    return ret;
-}
-
-bool check_validity(Cell *mem1, Cell *mem2, int *matched_values)
-{
-    bool ret = false;
-    int *candidates_1 = mem1->candidates;
-    int *candidates_2 = mem2->candidates;
-
-    for (int i=0; i<BOARD_SIZE; i++)
-    {
-        matched_values[i] = candidates_1[i] * candidates_2[i];
-    }
-
-    int counter = 0;
-    for (int i=0; i<BOARD_SIZE; i++)
-    {
-        counter += matched_values[i];
-    }
-
-    if (counter >= 2)
-    {
-        ret = true;
-    }
-
-    return ret;
-}
-
-void get_value_from_matched_ones(int *matched_values, int *res_value)
-{
-    int counter = 0;
-
-    for (int i=0; i<BOARD_SIZE; i++)
-    {
-        if (matched_values[i])
-        {
-            res_value[counter++] = i;
-        }
-    }
-}
-
-bool is_same_house_hidden_pairs(int *match_positions, Cell *first_cell, Cell *second_cell, int row_index, int col_index, int box_index)
-{
-    bool ret = false;
-    int draft_positions[3];
-    for (int i=0; i<3; i++)
-    {
-        draft_positions[i] = match_positions[i];
-    }
-
-    int ori_positions[3] = {row_index, col_index, box_index};
-    int compare_positions[3] = {second_cell->row_index, second_cell->col_index, second_cell->box_index};
-    
-    for (int i=0; i<3; i++)
-    {
-        draft_positions[i] *= (ori_positions[i] == compare_positions[i]);
-        ret |= draft_positions[i];
-    }
-
-    if (ret)
-    {
-        for (int i=0; i<3; i++)
-        {
-            match_positions[i] = draft_positions[i];
-        }
-
-        return ret;
-    }
-    
-    return ret;
-}
-
-bool pair_is_not_unique(int *matched_values, int *matched_positions, Cell *first_cell, Cell *second_cell, SudokuBoard *p_board)
-{
-    bool ret = false;
-    int row_index = first_cell->row_index;
-    int col_index = first_cell->col_index;
-    int box_index = first_cell->box_index;
-
-    for (int i=0; i<3; i++)
-    {
-        if (matched_positions[i])
-        {
-            if (i == 0)
+            if (counter != 2) // not enough cells with hidden pair values
             {
-                ret |= check_for_each_group(first_cell, second_cell, matched_values, p_board->p_rows[row_index]);
+                free(pair);
+                continue;
             }
 
-            if (i == 1)
+            bool duplicate = false;
+            for (int i = 0; i < *p_counter; i++)
             {
-                ret |= check_for_each_group(first_cell, second_cell, matched_values, p_board->p_cols[col_index]);
+                if (p_hidden_pairs[i].p_cell1 == p_hidden_pairs[*p_counter].p_cell1 && p_hidden_pairs[i].p_cell2 == p_hidden_pairs[*p_counter].p_cell2)
+                {
+                    duplicate = true;
+                    break;
+                }
             }
 
-            if (i == 2)
+            if (!duplicate)
             {
-                ret |= check_for_each_group(first_cell, second_cell, matched_values, p_board->p_boxes[box_index]);
+                p_hidden_pairs[*p_counter].arr = pair;
+                *p_counter += 1;
+            }
+            else
+            {
+                free(pair);
             }
         }
     }
-
-    return ret;
 }
 
-bool check_for_each_group(Cell *first_cell, Cell *second_cell, int *matched_values, Cell **group)
+int find_hidden_pair_values(Cell **p_cells, int *hidden_pair_values)
 {
-    bool ret = false;
+    int hidden_pair_value_counter = 0;
+    int candidate_counter[BOARD_SIZE] = {0};
 
-    for (int j=0; j<BOARD_SIZE; j++)
+    for (int i = 0; i < BOARD_SIZE; i++)
     {
-        Cell *test_cell = group[j];
-        if (test_cell == first_cell || test_cell == second_cell)
+        if (p_cells[i]->fixed || p_cells[i]->num_candidates == 1)
         {
             continue;
         }
 
-        for (int t=0; t<BOARD_SIZE; t++)
+        int *candidates = get_candidates(p_cells[i]);
+        for (int j = 0; j < p_cells[i]->num_candidates; j++)
         {
-            matched_values[t] *= !(test_cell->candidates[t]);
+            candidate_counter[candidates[j] - 1] += 1;
+        }
+        free(candidates);
+    }
+
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        if (candidate_counter[i] == 2)
+        {
+            hidden_pair_values[hidden_pair_value_counter] = i + 1;
+            hidden_pair_value_counter++;
         }
     }
 
-    int value_counter = 0;
-    for (int i=0; i<BOARD_SIZE; i++)
-    {
-        if (matched_values[i])
-        {
-            value_counter++;
-        }        
-    }
-
-    if (value_counter != 2)
-    {
-        ret = true;
-    }
-
-    return ret;
+    return hidden_pair_value_counter;
 }
